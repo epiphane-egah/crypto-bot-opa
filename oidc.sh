@@ -1,8 +1,11 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
 # 1. configuration gcloud 
 PROJECT_ID="jan26-cde-crypto"
-GITHUB_REPO="epiphane-egah/jan26_cde_crypto_streamlit"
-POOL_NAME="github"
-PROVIDER_NAME="github-provider" # Nom du provider OIDC
+GITHUB_REPO="epiphane-egah/crypto-bot-opa"
+POOL_NAME="github-epiphane"
+PROVIDER_NAME="github-epiphane-provider" # Nom du provider OIDC
 PROJECT_NUMBER=$(gcloud projects describe "$PROJECT_ID" \
   --format="value(projectNumber)")
 SERVICE_ACCOUNT="${PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
@@ -24,14 +27,14 @@ gcloud services enable \
 
 
 # création d'un espace workload identity sur gcloud (système externe)
-gcloud iam workload-identity-pools describe "$POOL_NAME" --location="global" >/dev/null 2>&1 \
+gcloud iam workload-identity-pools describe "$POOL_NAME" --location="global" >/dev/null 2>&1 || \
  gcloud iam workload-identity-pools create "$POOL_NAME" \
   --project="$PROJECT_ID" \
   --location="global" \
   --display-name="GitHub Actions"
 # si tu recoit une demande de connection de mon ripo github, il faut accepter
 # github de son côté garantit que c'est bien un de ses repo
-gcloud iam workload-identity-pools describe "$PROVIDER_NAME" --location="global" >/dev/null 2>&1 \
+gcloud iam workload-identity-pools describe "$PROVIDER_NAME" --location="global" >/dev/null 2>&1 || \
   gcloud iam workload-identity-pools providers create-oidc "$PROVIDER_NAME" \
   --project="$PROJECT_ID" \
   --location="global" \
