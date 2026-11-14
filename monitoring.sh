@@ -439,7 +439,6 @@ create_policy "Erreurs création config trading" "ERROR" "0s" \
   "sum(increase(${M}:trading_configs_requests{outcome=\"error\",${SEL}}[10m])) > 0" \
   "Erreur PostgreSQL pendant POST /api/trading-configs."
 
-# ------------------------------------------------------------------
 # 7. ALERTES JOBS : échecs (une policy par métrique d'échec)
 # Trading (argent réel -> CRITICAL)
 create_log_alert "Trading horaire en échec" "CRITICAL" "hourly_trade_job_failed" 1 \
@@ -483,10 +482,6 @@ create_log_alert "Cloud Scheduler : déclenchement en erreur" "ERROR" "scheduler
 # Job horaire : 70 min = 4200 s (1 h + marge)
 create_absence_alert "Trading horaire absent" "CRITICAL" "hourly_trade_job_success" 4200 \
   "Aucun succès de hourly_trading depuis 70 min. Vérifier Cloud Scheduler et les exécutions du job."
-
-# Si dbt tourne plusieurs fois par jour (ex. toutes les 6 h), décommentez :
-# create_absence_alert "dbt absent" "ERROR" "dbt_job_success" 25200 \
-#   "Aucun succès dbt depuis 7 h."
 
 # Bilan
 if [ -n "$PENDING" ]; then
