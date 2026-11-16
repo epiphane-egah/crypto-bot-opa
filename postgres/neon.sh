@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-# ============================================================
+
 # Configuration
-# ============================================================
+
 
 PROJECT_NAME="jan26-cde-crypto"
 DATABASE="Clients"
@@ -17,9 +17,9 @@ SECRET_NAME="google-application-credentials"
 # Secret qui contiendra l'URL poolée vers la base Clients
 DATABASE_SECRET_NAME="clients-database-url-pooler"
 
-# ============================================================
+
 # Récupération des credentials depuis GCP Secret Manager
-# ============================================================
+
 
 echo "=== Configuration du projet GCP ==="
 
@@ -38,9 +38,9 @@ ROOT_PASSWORD="$(echo "$CONFIG" | jq -r '.root_password')"
 : "${DB_USER:?username absent du secret $SECRET_NAME}"
 : "${DB_PASSWORD:?password absent du secret $SECRET_NAME}"
 
-# ============================================================
+
 # Vérifications
-# ============================================================
+
 
 command -v gcloud >/dev/null 2>&1 || {
     echo "ERREUR: gcloud CLI n'est pas installé."
@@ -73,9 +73,9 @@ command -v python3 >/dev/null 2>&1 || {
     exit 1
 }
 
-# ============================================================
+
 # Projet Neon
-# ============================================================
+
 
 echo
 echo "=== Projet Neon : $PROJECT_NAME ==="
@@ -122,9 +122,8 @@ else
 
 fi
 
-# ============================================================
+
 # Link Neon
-# ============================================================
 
 echo
 echo "=== Association du projet au répertoire ==="
@@ -149,9 +148,9 @@ echo "Contexte Neon :"
 
 neon status || true
 
-# ============================================================
+
 # Récupération des URLs Neon
-# ============================================================
+
 
 echo
 echo "=== Récupération des variables Neon ==="
@@ -173,12 +172,8 @@ set +a
 : "${DATABASE_URL:?DATABASE_URL absente de $ENV_FILE}"
 : "${DATABASE_URL_UNPOOLED:?DATABASE_URL_UNPOOLED absente de $ENV_FILE}"
 
-# DB_USER / DB_PASSWORD ont déjà été récupérés depuis Secret Manager.
-# On ne les remplace pas ici.
 
-# ============================================================
 # Diagnostic connexion Neon
-# ============================================================
 
 echo
 echo "=== Connexion Neon ==="
@@ -191,9 +186,8 @@ psql "$DATABASE_URL_UNPOOLED" \
             current_user       AS user;
     "
 
-# ============================================================
+
 # Création de la base Clients
-# ============================================================
 
 echo
 echo "=== Base $DATABASE ==="
@@ -223,9 +217,7 @@ else
 
 fi
 
-# ============================================================
 # Construction de l'URL ADMIN vers Clients
-# ============================================================
 
 echo
 echo "=== Construction de l'URL admin vers $DATABASE ==="
@@ -252,9 +244,8 @@ print(
 PY
 )"
 
-# ============================================================
 # Vérification de la base Clients
-# ============================================================
+
 
 echo
 echo "=== Vérification de $DATABASE ==="
@@ -274,9 +265,9 @@ fi
 
 echo "Connexion à \"$DATABASE\" OK."
 
-# ============================================================
+
 # Application du DDL
-# ============================================================
+
 
 echo
 echo "=== Application du DDL ==="
@@ -287,9 +278,9 @@ psql "$ADMIN_URL" \
 
 echo "DDL appliqué."
 
-# ============================================================
+
 # Création du rôle applicatif
-# ============================================================
+
 
 echo
 echo "=== Utilisateur applicatif : $DB_USER ==="
@@ -313,14 +304,6 @@ WHERE NOT EXISTS (
 
 SQL
 
-# ============================================================
-# Mise à jour du mot de passe du rôle
-# ============================================================
-#
-# CREATE ROLE ne modifie pas le mot de passe si le rôle existe.
-# Cette commande garantit que le mot de passe Neon correspond
-# toujours à celui stocké dans Secret Manager.
-# ============================================================
 
 echo
 echo "=== Synchronisation du mot de passe applicatif ==="
@@ -339,9 +322,9 @@ SELECT format(
 
 SQL
 
-# ============================================================
+
 # Permissions
-# ============================================================
+
 
 echo
 echo "=== Permissions ==="
@@ -397,18 +380,9 @@ SELECT format(
 
 SQL
 
-# ============================================================
+
 # Construction de l'URL poolée vers Clients
-# ============================================================
-#
-# On part de DATABASE_URL (pooler Neon) et on :
-#
-#   1. remplace la database par Clients
-#   2. remplace le user par DB_USER
-#   3. remplace le password par DB_PASSWORD
-#
-# Le hostname du pooler et les paramètres Neon sont conservés.
-# ============================================================
+
 
 echo
 echo "=== Construction de l'URL poolée applicative ==="
@@ -466,9 +440,9 @@ print(result)
 PY
 )"
 
-# ============================================================
+
 # Test de l'URL poolée avec l'utilisateur applicatif
-# ============================================================
+
 
 echo
 echo "=== Test de la connexion poolée ==="
@@ -503,13 +477,9 @@ echo "Connexion poolée OK."
 echo "Database : $POOLER_DATABASE"
 echo "User     : $POOLER_USER"
 
-# IMPORTANT :
-# Ne jamais afficher CLIENTS_POOLER_URL ici.
-# Elle contient le mot de passe.
 
-# ============================================================
 # Création du secret GCP
-# ============================================================
+
 
 echo
 echo "=== Secret Manager : $DATABASE_SECRET_NAME ==="
@@ -532,9 +502,7 @@ else
 
 fi
 
-# ============================================================
 # Ajout d'une nouvelle version
-# ============================================================
 
 echo
 echo "=== Enregistrement de l'URL poolée ==="
@@ -546,9 +514,8 @@ printf '%s' "$CLIENTS_POOLER_URL" \
 
 echo "Nouvelle version du secret créée."
 
-# ============================================================
 # Vérification du secret
-# ============================================================
+
 
 echo
 echo "=== Vérification du secret ==="
@@ -567,9 +534,9 @@ else
 
 fi
 
-# ============================================================
+
 # Vérification finale des bases
-# ============================================================
+
 
 echo
 echo "=== Bases disponibles ==="
@@ -583,19 +550,9 @@ psql "$DATABASE_URL_UNPOOLED" \
         ORDER BY datname;
     "
 
-# ============================================================
-# Résumé
-# ============================================================
-
-echo
-echo "============================================================"
 echo " Configuration Neon terminée."
 echo
 echo " Projet        : $PROJECT_NAME"
 echo " Database      : $DATABASE"
 echo " User          : $DB_USER"
 echo " Secret GCP    : $DATABASE_SECRET_NAME"
-echo " Connexion     : Pooler Neon"
-echo
-echo " L'URL complète n'est volontairement pas affichée."
-echo "============================================================"
